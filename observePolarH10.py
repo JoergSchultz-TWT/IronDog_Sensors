@@ -1,6 +1,5 @@
 import asyncio
 import sys
-import time
 from datetime import datetime
 
 import aioconsole
@@ -43,7 +42,8 @@ async def run(client):
     polar = PolarH10(client)
     await polar.print_device_info()
     await polar.start_hr_observation(hr_user_function=handle_hr, hr_variability_user_function=handle_hrv)
-    await polar.start_acc_observation(acc_user_function=handle_acc)
+    # Frequency = 25Hz, 50Hz, 100Hz or 200Hz
+    await polar.start_acc_observation(acc_user_function=handle_acc, frequency=25)
     await polar.start_ecg_observation(ecg_user_function=handle_ecg)
     await aioconsole.ainput('Running: Press a key to quit\n')
     print("Stopping Polar data...", flush=True)

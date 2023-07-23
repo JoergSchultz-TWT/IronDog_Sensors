@@ -24,6 +24,7 @@ PMD_CHAR2_UUID = "fb005c82-02e7-f387-1cad-8acd2d8df0c8" #notify – Start the n
 # Accelerometer data with sample rates of 25Hz, 50Hz, 100Hz (0x64) and 200Hz (0xC8)
 # Frequency                                     200
 ACC_WRITE = bytearray([0x02, 0x02, 0x00, 0x01, 0xC8, 0x00, 0x01, 0x01, 0x10, 0x00, 0x02, 0x01, 0x08, 0x00])
+ACC_FREQUENCIES = (25, 50, 100, 200)
 
 # Electrocardiography (ECG) data in µV with sample rate 130Hz.
 # Frequency                                     130

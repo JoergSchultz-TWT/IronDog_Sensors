@@ -7,6 +7,7 @@ from Sensors import constants
 class PolarH10:
 
     def __init__(self, client):
+        self._acc_frequency = 200
         self._ecg_observed = False
         self._ecg_user_function = None
         self._acc_observed = False
@@ -101,7 +102,7 @@ class PolarH10:
 
         resolution = (frame_type + 1) * 8  # 16 bit
         step = math.ceil(resolution / 8.0)
-        time_step = 0.005 # 200 Hz sample rate TODO Adapt if changeable
+        time_step = 1 / self._acc_frequency
         n_samples = math.floor(len(samples)/(step*3))
         # timestamp = PolarH10._convert_to_unsigned_long(data, 1, 8)/1.0e9 # timestamp of the last sample
         timestamp = time.time() # Take machine time, not Polar time to sync with other processes
@@ -120,7 +121,11 @@ class PolarH10:
 
     # TODO set frequency
     async def start_acc_observation(self, acc_user_function, frequency=200):
+        if frequency not in constants.ACC_FREQUENCIES:
+            raise ValueError(f"Polar H10 provides only {constants.ACC_FREQUENCIES} Hz sampling for accelerometer data")
         self._acc_user_function = acc_user_function
+        self._acc_frequency = frequency
+        constants.ACC_WRITE[4] = self._acc_frequency
         await self.bleak_client.write_gatt_char(constants.PMD_CHAR1_UUID, constants.ACC_WRITE, response=True)
         await self.bleak_client.start_notify(constants.PMD_CHAR2_UUID, self._handle_acc_data)
         self._acc_observed = True
