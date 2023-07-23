@@ -1,6 +1,7 @@
 import asyncio
 import sys
 import time
+from datetime import datetime
 
 import aioconsole
 from bleak import BleakClient
@@ -16,22 +17,26 @@ acc_file = open("data/acc_data.csv", "w")
 ecg_file = open("data/ecg_data.csv", "w")
 
 
-def handle_hr(heart_rate):
-    hr_file.write(f"{time.time()},{heart_rate}\n")
+def handle_hr(timestamp, heart_rate):
+    formatted_time = datetime.fromtimestamp(timestamp)
+    hr_file.write(f"{formatted_time},{heart_rate}\n")
 
 
-def handle_hrv(hrv):
-    print(f"HR Variability: {hrv}")
-    hrv_file.write(f"{time.time()},{hrv}\n")
+def handle_hrv(timestamp, hrv):
+    formatted_time = datetime.fromtimestamp(timestamp)
+    print(f"HR Variability: {formatted_time} {hrv}")
+    hrv_file.write(f"{formatted_time},{hrv}\n")
 
 
-def handle_acc(x, y, z):
-    acc_file.write(f"{time.time()},{x},{y},{z}\n")
+def handle_acc(timestamp, x, y, z):
+    formatted_time = datetime.fromtimestamp(timestamp)
+    acc_file.write(f"{formatted_time},{x},{y},{z}\n")
 
 
-def handle_ecg(ecg):
-    print(f"ECG: {ecg}")
-    ecg_file.write(f"{time.time()},{ecg}\n")
+def handle_ecg(timestamp, ecg):
+    formatted_time = datetime.fromtimestamp(timestamp)
+    print(f"ECG: {formatted_time} {ecg}")
+    ecg_file.write(f"{formatted_time},{ecg}\n")
 
 
 async def run(client):

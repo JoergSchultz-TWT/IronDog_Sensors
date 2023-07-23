@@ -1,4 +1,5 @@
 import math
+import time
 
 from Sensors import constants
 
@@ -40,6 +41,7 @@ class PolarH10:
         - inter-beat-intervals (IBIs)
             One IBI is encoded by 2 consecutive bytes. Up to 18 bytes depending on presence of uint16 HR format and energy expenditure.
         """
+        timestamp = time.time() # Take machine time, not Polar time to sync with other processes
         byte0 = data[0]  # heart rate format
         uint8_format = (byte0 & 1) == 0
         energy_expenditure = ((byte0 >> 3) & 1) == 1
@@ -55,7 +57,7 @@ class PolarH10:
             hr = (data[2] << 8) | data[1]  # uint16
             first_rr_byte += 1
         if self._hr_user_function is not None:
-            self._hr_user_function(hr)
+            self._hr_user_function(timestamp ,hr)
 
         for i in range(first_rr_byte, len(data), 2):
             ibi = (data[i + 1] << 8) | data[i]
@@ -63,7 +65,7 @@ class PolarH10:
             # Convert 1/1024 sec format to milliseconds.
             ibi = ibi / 1024 * 1000
             if self._hr_variability_user_function is not None:
-                self._hr_variability_user_function(ibi)
+                self._hr_variability_user_function(timestamp, ibi)
 
     async def start_hr_observation(self, hr_user_function, hr_variability_user_function):
         self._hr_user_function = hr_user_function
@@ -85,23 +87,36 @@ class PolarH10:
             bytearray(data[offset: offset + length]), byteorder="little", signed=True,
         )
 
+    @staticmethod
+    def _convert_to_unsigned_long(data, offset, length):
+        return int.from_bytes(
+            bytearray(data[offset : offset + length]), byteorder="little", signed=False,
+        )
+
     def _handle_acc_data(self, sender, data):
         if data[0] != 0x02:
             return
         frame_type = data[9]
+        samples = data[10:]
+
         resolution = (frame_type + 1) * 8  # 16 bit
         step = math.ceil(resolution / 8.0)
-        samples = data[10:]
+        time_step = 0.005 # 200 Hz sample rate TODO Adapt if changeable
+        n_samples = math.floor(len(samples)/(step*3))
+        # timestamp = PolarH10._convert_to_unsigned_long(data, 1, 8)/1.0e9 # timestamp of the last sample
+        timestamp = time.time() # Take machine time, not Polar time to sync with other processes
+        sample_timestamp = timestamp - (n_samples-1)*time_step
         offset = 0
         while offset < len(samples):
-            x = self._convert_array_to_signed_int(samples, offset, step)
+            x = PolarH10._convert_array_to_signed_int(samples, offset, step)
             offset += step
-            y = self._convert_array_to_signed_int(samples, offset, step)
+            y = PolarH10._convert_array_to_signed_int(samples, offset, step)
             offset += step
-            z = self._convert_array_to_signed_int(samples, offset, step)
+            z = PolarH10._convert_array_to_signed_int(samples, offset, step)
             offset += step
             if self._acc_user_function is not None:
-                self._acc_user_function(x=x, y=y, z=z)
+                self._acc_user_function(timestamp=sample_timestamp, x=x, y=y, z=z)
+            sample_timestamp += time_step
 
     # TODO set frequency
     async def start_acc_observation(self, acc_user_function, frequency=200):
@@ -117,11 +132,17 @@ class PolarH10:
         step = 3
         samples = data[10:]
         offset = 0
+        time_step = 1.0/ 130 # Hard Coded ECG Frequency
+        n_samples = math.floor(len(samples)/step)
+        # timestamp = PolarH10._convert_to_unsigned_long(data, 1, 8)/1.0e9
+        timestamp = time.time() # Take machine time, not Polar time to sync with other processes
+        sample_timestamp = timestamp - (n_samples-1)*time_step
         while offset < len(samples):
-            ecg = self._convert_array_to_signed_int(samples, offset, step)
+            ecg = PolarH10._convert_array_to_signed_int(samples, offset, step)
             offset += step
             if self._ecg_user_function is not None:
-                self._ecg_user_function(ecg)
+                self._ecg_user_function(sample_timestamp, ecg)
+            sample_timestamp += time_step
 
     async def start_ecg_observation(self, ecg_user_function):
         self._ecg_user_function = ecg_user_function
