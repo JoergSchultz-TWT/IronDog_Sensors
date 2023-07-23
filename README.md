@@ -4,7 +4,7 @@
 
 ### Overview
 
-This package enables you to connect to your Polar H10 and read the following data in real time:
+This package enables you to connect to your Polar H10 and read the following data in real time from a python script: 
 - Heart rate
 - Inter-Beat Interval (heart rate variation)
 - ECG
@@ -32,8 +32,8 @@ Example program: [observerPolarH10.py](./observePolarH10.py)
 #### Setup
 
 To uniquely identify a Polar H10, I am using its address. If you don't have it, you can get it by running the 
-`getAddressPolarH10.py` script. Once you have the address, which looks something like `C9:C4:09:A0:49:1D`, you can 
-make a connection with the Polar H10 using the bleak library:
+[`getAddressPolarH10.py`](./getAddressPolarH10.py) script. Once you have the address, which looks something like 
+`C9:C4:09:A0:49:1D`, you can make a connection with the Polar H10 using the bleak library:
 
 ```python
 import asyncio
